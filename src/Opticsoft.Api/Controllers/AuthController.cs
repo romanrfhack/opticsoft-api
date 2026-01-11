@@ -1,4 +1,4 @@
-using Microsoft.AspNetCore.Authorization;
+ï»¿using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Identity.UI.Services;
 using Microsoft.AspNetCore.Mvc;
@@ -43,15 +43,27 @@ public class AuthController : ControllerBase
         var ok = await _signInManager.CheckPasswordSignInAsync(user, req.Password, lockoutOnFailure: false);
         if (!ok.Succeeded) return Unauthorized();
 
+        // ðŸ”¹ Actualizar fecha de Ãºltimo inicio de sesiÃ³n
+        user.LastLoginAt = DateTime.UtcNow;
+        await _userManager.UpdateAsync(user);
+
         var (access, exp) = await _tokens.CreateAccessTokenAsync(user);
         var refresh = JwtTokenService.GenerateRefreshToken();
-        _db.RefreshTokens.Add(new RefreshToken { Id = Guid.NewGuid(), UserId = user.Id, Token = refresh, ExpiresAt = DateTimeOffset.UtcNow.AddDays(7) });
+
+        _db.RefreshTokens.Add(new RefreshToken
+        {
+            Id = Guid.NewGuid(),
+            UserId = user.Id,
+            Token = refresh,
+            ExpiresAt = DateTimeOffset.UtcNow.AddDays(7)
+        });
         await _db.SaveChangesAsync();
 
         var roles = await _userManager.GetRolesAsync(user);
         return new TokenResponse(access, refresh, (long)(exp - DateTimeOffset.UtcNow).TotalSeconds,
             new { id = user.Id, name = user.FullName ?? user.UserName, email = user.Email, sucursalId = user.SucursalId, roles });
     }
+
 
     [HttpPost("refresh")]
     [AllowAnonymous]
@@ -109,14 +121,14 @@ public class AuthController : ControllerBase
             bool emailChanged = false;
             string? oldEmail = null;
 
-            // Verificar si el nombre cambió
+            // Verificar si el nombre cambiÃ³
             if (user.FullName != req.FullName)
             {
                 user.FullName = req.FullName;
                 hasChanges = true;
             }
 
-            // Verificar si el email cambió
+            // Verificar si el email cambiÃ³
             if (!string.IsNullOrEmpty(req.email) && user.Email != req.email)
             {
                 var existingUser = await userManager.FindByEmailAsync(req.email);
@@ -124,19 +136,19 @@ public class AuthController : ControllerBase
                 {
                     return BadRequest(new
                     {
-                        message = "El email ya está en uso por otro usuario."
+                        message = "El email ya estÃ¡ en uso por otro usuario."
                     });
                 }
 
                 oldEmail = user.Email; // Guardar el email antiguo
                 user.Email = req.email;
                 user.EmailConfirmed = false; // Marcar como no confirmado
-                user.UserName = req.email; // Actualizar también el username si es necesario
+                user.UserName = req.email; // Actualizar tambiÃ©n el username si es necesario
                 hasChanges = true;
                 emailChanged = true;
             }
 
-            // Verificar si el teléfono cambió
+            // Verificar si el telÃ©fono cambiÃ³
             if (req.PhoneNumber != user.PhoneNumber)
             {
                 user.PhoneNumber = req.PhoneNumber;
@@ -160,7 +172,7 @@ public class AuthController : ControllerBase
                     });
                 }
 
-                // Si el email cambió, enviar email de verificación
+                // Si el email cambiÃ³, enviar email de verificaciÃ³n
                 if (emailChanged && !string.IsNullOrEmpty(oldEmail))
                 {
                     emailChangeResult = await SendEmailVerification(user, emailSender);
@@ -194,10 +206,10 @@ public class AuthController : ControllerBase
     {
         try
         {
-            // Generar token de confirmación
+            // Generar token de confirmaciÃ³n
             var token = await _userManager.GenerateEmailConfirmationTokenAsync(user);
 
-            // Crear enlace de confirmación (ajusta la URL según tu frontend)
+            // Crear enlace de confirmaciÃ³n (ajusta la URL segÃºn tu frontend)
             var confirmationLink = $"https://tudominio.com/confirm-email?userId={user.Id}&token={WebUtility.UrlEncode(token)}";
 
             // Crear el contenido del email
@@ -209,17 +221,17 @@ public class AuthController : ControllerBase
             <p><a href='{confirmationLink}' style='background-color: #06b6d4; color: white; padding: 10px 20px; text-decoration: none; border-radius: 5px;'>Confirmar Email</a></p>
             <p>Si no solicitaste este cambio, por favor ignora este mensaje.</p>
             <br>
-            <p>Saludos,<br>El equipo de tu aplicación</p>
+            <p>Saludos,<br>El equipo de tu aplicaciÃ³n</p>
         ";
 
             // Enviar email
             await emailSender.SendEmailAsync(user.Email, subject, message);
 
-            return new EmailChangeResult { Success = true, Message = "Email de verificación enviado" };
+            return new EmailChangeResult { Success = true, Message = "Email de verificaciÃ³n enviado" };
         }
         catch (Exception ex)
         {
-            return new EmailChangeResult { Success = false, Message = "Error al enviar email de verificación" };
+            return new EmailChangeResult { Success = false, Message = "Error al enviar email de verificaciÃ³n" };
         }
     }
 
@@ -253,12 +265,12 @@ public class AuthController : ControllerBase
             if (user == null)
                 return Unauthorized("Usuario no encontrado.");
 
-            // Validar que la contraseña actual sea correcta
+            // Validar que la contraseÃ±a actual sea correcta
             var isCurrentPasswordValid = await userManager.CheckPasswordAsync(user, req.CurrentPassword);
             if (!isCurrentPasswordValid)
-                return BadRequest(new { message = "La contraseña actual es incorrecta." });
+                return BadRequest(new { message = "La contraseÃ±a actual es incorrecta." });
 
-            // Cambiar la contraseña
+            // Cambiar la contraseÃ±a
             var result = await userManager.ChangePasswordAsync(user, req.CurrentPassword, req.NewPassword);
 
             if (!result.Succeeded)
@@ -266,21 +278,21 @@ public class AuthController : ControllerBase
                 var errors = result.Errors.Select(e => e.Description);
                 return BadRequest(new
                 {
-                    message = "Error al cambiar la contraseña.",
+                    message = "Error al cambiar la contraseÃ±a.",
                     errors = errors
                 });
             }
 
-            return Ok(new { message = "Contraseña cambiada exitosamente." });
+            return Ok(new { message = "ContraseÃ±a cambiada exitosamente." });
         }
         catch (Exception ex)
         {
-            // Log the exception (deberías tener un servicio de logging aquí)
-            // _logger.LogError(ex, "Error cambiando contraseña para el usuario {UserId}", userId);
+            // Log the exception (deberÃ­as tener un servicio de logging aquÃ­)
+            // _logger.LogError(ex, "Error cambiando contraseÃ±a para el usuario {UserId}", userId);
 
             return StatusCode(500, new
             {
-                message = "Error interno del servidor al cambiar la contraseña."
+                message = "Error interno del servidor al cambiar la contraseÃ±a."
             });
         }
     }
