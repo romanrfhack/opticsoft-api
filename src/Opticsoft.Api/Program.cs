@@ -1,8 +1,10 @@
 using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.AspNetCore.DataProtection;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
+
 using Opticsoft.Api.Auth;
 using Opticsoft.Api.MultiTenancy;
 using Opticsoft.Application.Common.Interfaces;
@@ -10,6 +12,7 @@ using Opticsoft.Domain.Entities;
 using Opticsoft.Infrastructure;
 using Opticsoft.Infrastructure.Identity;
 using Opticsoft.Infrastructure.Persistence;
+
 using System.IdentityModel.Tokens.Jwt;
 using System.Text;
 const string CorsLocal = "CorsLocal";
@@ -86,6 +89,10 @@ builder.Services.AddSwaggerGen(c =>
 });
 
 builder.Services.AddHttpContextAccessor();
+
+builder.Services.AddDataProtection()
+    .PersistKeysToFileSystem(new DirectoryInfo("/var/www/opticsoft/api/keys"))
+    .SetApplicationName("Opticsoft.Api");
 
 var app = builder.Build();
 app.UsePathBase("/api");
