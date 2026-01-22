@@ -42,7 +42,7 @@ builder.Services.AddCors(opts =>
         .AllowAnyMethod());
 
     opts.AddPolicy(CorsProd, b => b
-        .WithOrigins("https://opticsoft.com.mx")
+        .WithOrigins("https://opticsoft.com.mx", "https://admin.opticsoft.com.mx")
         .AllowAnyHeader()
         .AllowAnyMethod());
 });
