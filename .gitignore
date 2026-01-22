@@ -21,3 +21,8 @@
 /src/Opticsoft.Infrastructure/bin/Debug/net8.0
 /src/Opticsoft.Infrastructure/obj
 /obj
+/publish
+/src/Opticsoft.Api/bin/Release/net8.0
+/src/Opticsoft.Application/bin/Release/net8.0
+/src/Opticsoft.Infrastructure/bin/Release/net8.0
+/src/Opticsoft.Domain/bin/Release/net8.0
